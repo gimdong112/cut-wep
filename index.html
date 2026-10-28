@@ -66,11 +66,16 @@
         </div>
         <section class="trim-panel" id="trimPanel" hidden aria-labelledby="trimTitle">
           <div class="trim-heading">
-            <div><div class="kicker">간단 편집</div><h3 id="trimTitle">원하는 구간만 잘라내기</h3><p>시작과 끝 시간을 정한 뒤 선택 구간을 미리 보고 저장하세요.</p></div>
-            <span class="trim-duration" id="trimDuration">선택 구간 00:00</span>
+            <div><div class="kicker">간단 편집</div><h3 id="trimTitle">원하는 구간만 잘라내기</h3><p>필요한 구간을 모아 순서를 정하고, 이어 붙인 결과를 확인하세요.</p></div>
+            <span class="trim-duration" id="trimDuration">현재 선택 구간 00:00</span>
           </div>
+          <section class="segment-editor" aria-labelledby="segmentTitle">
+            <div class="segment-heading"><div><h4 id="segmentTitle">영상에 넣을 구간 <span id="segmentSummary">0개 구간</span></h4><p>선택한 구간을 추가하고, 순서를 바꾸거나 삭제할 수 있어요.</p></div><button class="button" id="addSegment" type="button">＋ 구간 추가</button></div>
+            <ol class="segment-list" id="segmentList" aria-label="편집에 사용할 구간 목록"></ol>
+            <p class="segment-empty" id="segmentEmpty">아직 구간이 없어요. 위의 시작·끝 시간을 정한 뒤 <b>구간 추가</b>를 눌러주세요.</p>
+          </section>
           <div class="trim-preview" id="trimPreview" hidden>
-            <div class="trim-preview-heading"><div><h4>잘라낸 결과 미리보기</h4><p id="trimPreviewRange">선택한 구간을 재생합니다.</p></div><span class="preview-badge">저장 전 미리보기</span></div>
+            <div class="trim-preview-heading"><div><h4>이어 붙인 결과 미리보기</h4><p id="trimPreviewRange">구간을 추가하면 전체 편집 결과를 볼 수 있어요.</p></div><span class="preview-badge">저장 전 미리보기</span></div>
             <div class="trim-preview-frame"><video id="trimPreviewVideo" controls playsinline preload="metadata" aria-label="잘라낸 구간 미리보기"></video></div>
           </div>
           <div class="trim-controls">
@@ -80,8 +85,8 @@
           <div class="trim-actions">
             <button class="button button-secondary" id="setTrimStart" type="button">현재 위치를 시작으로</button>
             <button class="button button-secondary" id="setTrimEnd" type="button">현재 위치를 끝으로</button>
-            <button class="button button-secondary" id="previewTrim" type="button">선택 구간 미리보기</button>
-            <button class="button" id="exportTrim" type="button">선택 구간 저장</button>
+            <button class="button button-secondary" id="previewTrim" type="button" disabled>전체 결과 미리보기</button>
+            <button class="button" id="exportTrim" type="button" disabled>전체 영상 저장</button>
           </div>
           <p class="trim-help" id="trimStatus" role="status" aria-live="polite">양 끝의 슬라이더를 움직여 자를 구간을 지정하세요. 저장은 선택한 영상 길이만큼 실시간으로 진행됩니다.</p>
         </section>
