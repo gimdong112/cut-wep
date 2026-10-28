@@ -11,6 +11,9 @@ const selectVideoButton = document.querySelector('#selectVideoButton');
 const replaceVideoButton = document.querySelector('#replaceVideoButton');
 const continueButton = document.querySelector('#continueButton');
 const trimPanel = document.querySelector('#trimPanel');
+const trimPreviewBox = document.querySelector('#trimPreview');
+const trimPreviewVideo = document.querySelector('#trimPreviewVideo');
+const trimPreviewRange = document.querySelector('#trimPreviewRange');
 const trimStart = document.querySelector('#trimStart');
 const trimEnd = document.querySelector('#trimEnd');
 const trimStartLabel = document.querySelector('#trimStartLabel');
@@ -59,6 +62,12 @@ function showVideo(file) {
     videoPreview.src = currentVideoUrl;
     videoPreview.load();
   }
+  if (trimPreviewVideo) {
+    trimPreviewVideo.pause();
+    trimPreviewVideo.src = currentVideoUrl;
+    trimPreviewVideo.load();
+  }
+  if (trimPreviewBox) trimPreviewBox.hidden = true;
   if (fileName) fileName.textContent = file.name;
   if (fileSize) fileSize.textContent = formatSize(file.size);
   if (fileDuration) fileDuration.textContent = '길이 확인 중';
@@ -181,6 +190,7 @@ setTrimStartButton?.addEventListener('click', () => {
   const latestStart = Math.max(0, Number(trimEnd.value) - 0.1);
   trimStart.value = String(Math.min(latestStart, videoPreview.currentTime));
   updateTrimDisplay();
+  refreshTrimPreviewSelection();
 });
 
 setTrimEndButton?.addEventListener('click', () => {
@@ -188,26 +198,77 @@ setTrimEndButton?.addEventListener('click', () => {
   const earliestEnd = Math.min(Number(trimEnd.max), Number(trimStart.value) + 0.1);
   trimEnd.value = String(Math.max(earliestEnd, Math.min(Number(trimEnd.max), videoPreview.currentTime)));
   updateTrimDisplay();
+  refreshTrimPreviewSelection();
 });
 
 previewTrimButton?.addEventListener('click', async () => {
-  if (!videoPreview || !trimStart || !trimEnd) return;
-  videoPreview.currentTime = Number(trimStart.value);
+  if (!trimPreviewVideo || !trimPreviewBox || !trimStart || !trimEnd || !currentVideoUrl) return;
+  const start = Number(trimStart.value);
+  const end = Number(trimEnd.value);
+  trimPreviewBox.hidden = false;
+  trimPreviewRange.textContent = `${formatTrimTime(start)}–${formatTrimTime(end)} · ${formatTrimTime(end - start)}`;
+  if (trimPreviewVideo.src !== currentVideoUrl) {
+    trimPreviewVideo.src = currentVideoUrl;
+    trimPreviewVideo.load();
+  }
+  setTrimMessage('선택한 구간의 미리보기를 준비하고 있어요.');
   try {
-    await videoPreview.play();
-    setTrimMessage('선택 구간을 재생하고 있어요. 끝 지점에서 자동으로 멈춥니다.');
+    if (trimPreviewVideo.readyState < 1) {
+      await new Promise((resolve) => trimPreviewVideo.addEventListener('loadedmetadata', resolve, { once: true }));
+    }
+    if (Math.abs(trimPreviewVideo.currentTime - start) > 0.05) {
+      await new Promise((resolve) => {
+        trimPreviewVideo.addEventListener('seeked', resolve, { once: true });
+        trimPreviewVideo.currentTime = start;
+      });
+    }
+    await trimPreviewVideo.play();
+    trimPreviewBox.dataset.playing = 'true';
+    setTrimMessage('잘라낼 구간만 미리보기에서 재생하고 있어요. 끝 지점에서 멈춥니다.');
   } catch {
-    setTrimMessage('미리보기를 재생할 수 없어요. 영상 컨트롤의 재생 버튼을 눌러주세요.', 'error');
+    trimPreviewBox.dataset.playing = 'false';
+    setTrimMessage('미리보기를 재생할 수 없어요. 아래 영상의 재생 버튼을 눌러주세요.', 'error');
   }
 });
 
-videoPreview?.addEventListener('timeupdate', () => {
-  if (!trimEnd || videoPreview.paused) return;
-  if (videoPreview.currentTime >= Number(trimEnd.value)) {
-    videoPreview.pause();
-    videoPreview.currentTime = Number(trimEnd.value);
+trimPreviewVideo?.addEventListener('timeupdate', () => {
+  if (!trimEnd || trimPreviewVideo.paused) return;
+  if (trimPreviewVideo.currentTime >= Number(trimEnd.value)) {
+    trimPreviewVideo.pause();
+    trimPreviewVideo.currentTime = Number(trimEnd.value);
+    if (trimPreviewBox) trimPreviewBox.dataset.playing = 'false';
   }
 });
+
+trimPreviewVideo?.addEventListener('pause', () => {
+  if (trimPreviewBox) trimPreviewBox.dataset.playing = 'false';
+});
+
+trimPreviewVideo?.addEventListener('seeking', () => {
+  if (!trimStart || !trimEnd || !trimPreviewVideo) return;
+  if (trimPreviewVideo.currentTime < Number(trimStart.value)) {
+    trimPreviewVideo.currentTime = Number(trimStart.value);
+  } else if (trimPreviewVideo.currentTime > Number(trimEnd.value)) {
+    trimPreviewVideo.currentTime = Number(trimEnd.value);
+  }
+});
+
+function refreshTrimPreviewSelection() {
+  if (!trimPreviewBox || trimPreviewBox.hidden || !trimStart || !trimEnd) return;
+  trimPreviewVideo?.pause();
+  if (trimPreviewVideo && trimPreviewVideo.readyState >= 1) {
+    trimPreviewVideo.currentTime = Number(trimStart.value);
+  }
+  if (trimPreviewRange) {
+    const start = Number(trimStart.value);
+    const end = Number(trimEnd.value);
+    trimPreviewRange.textContent = `${formatTrimTime(start)}–${formatTrimTime(end)} · ${formatTrimTime(end - start)}`;
+  }
+  setTrimMessage('구간이 바뀌었어요. 미리보기 버튼을 눌러 새 결과를 확인하세요.');
+}
+
+trimStart?.addEventListener('input', refreshTrimPreviewSelection);
+trimEnd?.addEventListener('input', refreshTrimPreviewSelection);
 
 exportTrimButton?.addEventListener('click', async () => {
   if (!videoPreview || !trimStart || !trimEnd || !selectedVideo) return;
